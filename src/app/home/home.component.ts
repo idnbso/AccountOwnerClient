@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { FormControl, FormGroup } from '@angular/forms';
 import { AuthService } from '../shared/services/auth.service';
 
 @Component({
@@ -8,14 +9,25 @@ import { AuthService } from '../shared/services/auth.service';
 })
 export class HomeComponent implements OnInit {
 
-  public homeText: string;
+    public homeText: string;
+    public dateValue: Date;
 
-  constructor(private auth: AuthService) { }
+    public ownerForm: FormGroup;
 
-  ngOnInit(): void {
-    this.homeText = 'WELCOME TO ACCOUNT-OWNER APPLICATION';
+    constructor(private auth: AuthService) { }
 
-    this.auth.authenticate();
-  }
+    ngOnInit(): void {
+        this.homeText = 'WELCOME TO ACCOUNT-OWNER APPLICATION';
 
+        this.ownerForm = new FormGroup({
+            numberInput: new FormControl(null)
+        });
+
+        this.auth.authenticate();
+    }
+
+    public createOwner(formValue): void {
+        debugger;
+        console.log(formValue.numberInput);
+    }
 }
