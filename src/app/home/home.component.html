@@ -1,7 +1,7 @@
 <p class="home-text">{{homeText}}</p>
 
 <form [formGroup]="ownerForm" autocomplete="off" novalidate (ngSubmit)="createOwner(ownerForm.value)">
-    <app-number-input id="numberInput" formControlName="numberInput"></app-number-input>
+    <number-input id="numberInput" formControlName="numberInput"></number-input>
 
     <button type="submit">Submit</button>
 </form>

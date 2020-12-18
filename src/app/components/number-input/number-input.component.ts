@@ -1,9 +1,9 @@
-import { Component, ElementRef, forwardRef, Input, ViewChild } from '@angular/core';
+import { Component, ElementRef, forwardRef, Input, OnDestroy, ViewChild } from '@angular/core';
 import { formatNumber } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
-  selector: 'app-number-input',
+  selector: 'number-input',
   templateUrl: './number-input.component.html',
   styleUrls: ['./number-input.component.sass'],
   providers: [
@@ -14,7 +14,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     }
   ]
 })
-export class NumberInputComponent implements ControlValueAccessor {
+export class NumberInputComponent implements ControlValueAccessor, OnDestroy {
     @Input() disabled = false;
     @Input() isPositiveOnly = false;
     @ViewChild('inputElement') inputElement: ElementRef;
@@ -25,20 +25,33 @@ export class NumberInputComponent implements ControlValueAccessor {
     public isPeriodExists = false;
     public isMinusExists = false;
 
+    private setInputValueTimeout$;
+    private setInputValueCaretTimeout$;
+
     constructor() { }
 
+    ngOnDestroy(): void {
+        clearTimeout(this.setInputValueTimeout$);
+        clearTimeout(this.setInputValueCaretTimeout$);
+    }
+
     get value(): number | null {
-        return this.inputValue ? Number(this.inputValue.replace(/[^\d.-]/g, '')) : null;
+        debugger;
+        const inputValueNumber = Number(this.inputValue.replace(/[^\d.-]/g, ''));
+        return this.inputValue && isNaN(inputValueNumber) == false ? inputValueNumber : Number(this.validInput.replace(/[^\d.-]/g, ''));
     }
 
     setInputValue(value: string): void {
+        if (!this.inputValue) { return; }
+
         const selectionStart = this.inputElement.nativeElement.selectionStart;
         const previousTotalCommas = (this.inputValue.match(/,/g) || []).length;
-        setTimeout(() => {
+        this.setInputValueTimeout$ = setTimeout(() => {
             this.inputValue = value;
             this.validInput = value;
             const currentTotalCommas = (this.inputValue.match(/,/g) || []).length;
-            setTimeout(() => {
+
+            this.setInputValueCaretTimeout$ = setTimeout(() => {
                 const caretPosition = currentTotalCommas > previousTotalCommas ? selectionStart + 1 : selectionStart;
                 this.inputElement.nativeElement.setSelectionRange(caretPosition, caretPosition);
             });
@@ -47,21 +60,26 @@ export class NumberInputComponent implements ControlValueAccessor {
 
     /* Event Handlers - Start */
     onChange = (value: number) => {};
+
     onTouched = () => {};
+
     public onInput($event): void {
         const validInputCharactersRegex = /[^\d.-]/g;
         const inputCharacter: string = $event.data;
+        this.isPeriodExists = this.validInput && this.validInput.indexOf('.') > -1;
+        this.isMinusExists = this.validInput && this.validInput.indexOf('-') > -1;
 
         if (!inputCharacter) {
             this.setFormattedInput(this.value);
             return;
         }
 
-        const isPeriodInputInvalid = inputCharacter === '.' && this.isPeriodExists;
-        const isMinusInputInvalid = inputCharacter === '-' && (this.isPositiveOnly || this.isMinusExists || this.inputValue.length > 1);
+        const isPeriodInputInvalid = inputCharacter === '.' && (this.isPeriodExists || !this.validInput);
+        const isMinusInputInvalid = inputCharacter === '-' && (this.isPositiveOnly || this.isMinusExists);
         const isGeneralInputInvalid = validInputCharactersRegex.test(inputCharacter);
         if (isPeriodInputInvalid || isMinusInputInvalid || isGeneralInputInvalid) {
                 this.setInputValue(this.validInput);
+                this.onChange(this.value);
                 return;
         }
 
